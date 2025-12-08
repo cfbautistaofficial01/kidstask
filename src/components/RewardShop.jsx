@@ -3,13 +3,15 @@ import { useApp } from '../context/AppContext';
 import { ShoppingBag, Lock, Gift, AlertTriangle, ArrowRight, TrendingDown } from 'lucide-react';
 
 const RewardShop = () => {
-    const { rewards, currentProfile, redeemReward } = useApp();
+    const { rewards, currentProfile, redeemReward, depositPoints } = useApp();
 
     if (!currentProfile) return null;
     const points = currentProfile.points;
+    const savedPoints = currentProfile.savedPoints || 0;
 
     const [confirmingReward, setConfirmingReward] = useState(null);
     const [insufficientReward, setInsufficientReward] = useState(null);
+    const [showDepositModal, setShowDepositModal] = useState(false);
 
     const handleRedeemClick = (reward) => {
         if (points < reward.cost) {
@@ -39,6 +41,25 @@ const RewardShop = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {/* Deposit to Super Goal Card */}
+                    {currentProfile.milestone && (
+                        <button
+                            onClick={() => setShowDepositModal(true)}
+                            className="relative p-4 rounded-2xl border-4 border-orange-200 bg-orange-50 hover:bg-orange-100 hover:scale-[1.02] active:scale-95 transition-all flex flex-col items-center gap-3 text-center shadow-sm"
+                        >
+                            <div className="p-3 rounded-full bg-orange-200 text-orange-600 mb-1">
+                                <TrendingDown size={32} />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-gray-800 text-sm uppercase tracking-wide">Piggy Bank</h3>
+                                <p className="text-xs text-orange-600 font-bold mb-2">Grow your goal!</p>
+                                <span className="px-2 py-1 rounded-full bg-orange-200 text-orange-700 text-xs font-black">
+                                    Saved: {savedPoints}
+                                </span>
+                            </div>
+                        </button>
+                    )}
+
                     {rewards.map(reward => {
                         const canAfford = points >= reward.cost;
                         return (
@@ -80,6 +101,56 @@ const RewardShop = () => {
             )}
 
 
+
+            {/* Deposit Modal */}
+            {showDepositModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border-4 border-orange-200 animate-in zoom-in-95 duration-300 transform transition-all text-center">
+                        <div className="bg-orange-100 p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center animate-bounce">
+                            <TrendingDown size={40} className="text-orange-500" />
+                        </div>
+                        <h2 className="text-2xl font-black text-gray-800 mb-2">Fill the Piggy Bank! 🐷</h2>
+                        <p className="text-gray-500 font-bold mb-6">Move points to your Super Goal.</p>
+
+                        <div className="bg-blue-50 p-4 rounded-xl mb-6 flex justify-between items-center text-sm font-bold text-gray-400 uppercase">
+                            <span>Wallet: <b className="text-blue-500">{points}</b></span>
+                            <span>Saved: <b className="text-orange-500">{savedPoints}</b></span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                            <button
+                                onClick={() => { depositPoints(50); setShowDepositModal(false); }}
+                                disabled={points < 50}
+                                className="py-3 rounded-xl font-bold bg-gray-100 hover:bg-orange-100 hover:text-orange-600 disabled:opacity-50 transition-all"
+                            >
+                                50 pts
+                            </button>
+                            <button
+                                onClick={() => { depositPoints(100); setShowDepositModal(false); }}
+                                disabled={points < 100}
+                                className="py-3 rounded-xl font-bold bg-gray-100 hover:bg-orange-100 hover:text-orange-600 disabled:opacity-50 transition-all"
+                            >
+                                100 pts
+                            </button>
+                            <button
+                                onClick={() => { depositPoints(points); setShowDepositModal(false); }}
+                                disabled={points === 0}
+                                className="col-span-2 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 active:scale-95 disabled:opacity-50 transition-all shadow-lg"
+                            >
+                                Save Everything! ({points})
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => setShowDepositModal(false)}
+                            className="text-gray-400 font-bold hover:text-gray-600"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Smart Confirmation Modal */}
             {confirmingReward && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
@@ -103,44 +174,7 @@ const RewardShop = () => {
                             </div>
                         </div>
 
-                        {currentProfile.milestone && currentProfile.milestone.target > 0 && (
-                            <div className="bg-orange-50 p-4 rounded-xl mb-6 border border-orange-100">
-                                <h3 className="flex items-center gap-2 text-orange-600 font-bold mb-2">
-                                    <TrendingDown size={20} />
-                                    Super Goal Impact
-                                </h3>
-                                <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden mb-2">
-                                    {/* Background: Current Progress */}
-                                    <div
-                                        className="bg-gray-300 h-full w-full"
-                                        style={{ width: `${Math.min(100, (points / currentProfile.milestone.target) * 100)}%` }}
-                                    >
-                                        {/* Foreground: New Progress */}
-                                        <div
-                                            className="bg-orange-400 h-full transition-all"
-                                            style={{ width: `${Math.min(100, ((points - confirmingReward.cost) / currentProfile.milestone.target) * 100) / (Math.min(100, (points / currentProfile.milestone.target) * 100)) * 100}%` }} // Simplified visual logic: render the new progress bar ON TOP of the old one? specific width calculation needed
-                                        />
-                                    </div>
-                                </div>
-                                {/* Correct Approach: Render two bars or use width relative to container */}
-                                <div className="relative w-full bg-gray-200 rounded-full h-4 overflow-hidden mb-2">
-                                    {/* Old Progress (Grayed out to show loss) */}
-                                    <div
-                                        className="absolute top-0 left-0 h-full bg-gray-400"
-                                        style={{ width: `${Math.min(100, (points / currentProfile.milestone.target) * 100)}%` }}
-                                    />
-                                    {/* New Progress (Orange) */}
-                                    <div
-                                        className="absolute top-0 left-0 h-full bg-orange-500 transition-all"
-                                        style={{ width: `${Math.min(100, ((points - confirmingReward.cost) / currentProfile.milestone.target) * 100)}%` }}
-                                    />
-                                </div>
 
-                                <p className="text-xs text-orange-800 font-bold text-center">
-                                    Progress drops from {Math.round((points / currentProfile.milestone.target) * 100)}% to {Math.round(((points - confirmingReward.cost) / currentProfile.milestone.target) * 100)}%
-                                </p>
-                            </div>
-                        )}
 
                         <div className="flex gap-3">
                             <button

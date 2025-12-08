@@ -166,6 +166,7 @@ function App() {
           <MilestoneCard
             milestone={currentProfile.milestone}
             currentPoints={currentProfile.points}
+            savedPoints={currentProfile.savedPoints}
           />
         )}
 

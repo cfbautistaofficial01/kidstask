@@ -135,6 +135,30 @@ export const AppProvider = ({ children }) => {
         return false;
     };
 
+    const depositPoints = async (amount) => {
+        if (!currentProfileId || amount <= 0 || !familyData) return;
+        const profile = familyData.profiles.find(p => p.id === currentProfileId);
+        if (!profile || amount > profile.points) return;
+
+        try {
+            const newWallet = profile.points - amount;
+            const newSaved = (profile.savedPoints || 0) + amount;
+
+            const updatedProfiles = familyData.profiles.map(p => {
+                if (p.id === currentProfileId) {
+                    return { ...p, points: newWallet, savedPoints: newSaved };
+                }
+                return p;
+            });
+
+            await updateDoc(getFamilyRef(), { profiles: updatedProfiles });
+            addLog("Deposit", `${profile.name} deposited ${amount} to Goal`, 0);
+            fireConfetti();
+        } catch (error) {
+            console.error("Error depositing:", error);
+        }
+    };
+
     // -- Admin Actions --
     const updateTasks = async (newTasks) => {
         await updateDoc(getFamilyRef(), { tasks: newTasks });
@@ -144,7 +168,7 @@ export const AppProvider = ({ children }) => {
     };
 
     const addProfile = async (name, pin, milestone = null) => {
-        const newProfile = { id: uuidv4(), name, pin, points: 0, theme: 'purple' };
+        const newProfile = { id: uuidv4(), name, pin, points: 0, savedPoints: 0, theme: 'purple' };
         if (milestone) newProfile.milestone = milestone;
 
         await updateDoc(getFamilyRef(), {
@@ -392,7 +416,7 @@ export const AppProvider = ({ children }) => {
         addProfile, updateProfile, removeProfile,
         currentProfile, setCurrentProfileId,
         toggleTask,
-        redeemReward,
+        redeemReward, depositPoints, depositPoints,
         approveTask, rejectTask, addLog, dismissNotification,
         isTaskCompletedToday, isTaskPending, isTaskActiveNow, getCurrentPeriod,
         getTodayDate,

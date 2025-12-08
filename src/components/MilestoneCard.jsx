@@ -3,7 +3,7 @@ import { Trophy, Star, Lock, Unlock, Clock, AlertTriangle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useApp } from '../context/AppContext'; // Import context to update profile if needed
 
-const MilestoneCard = ({ milestone, currentPoints }) => {
+const MilestoneCard = ({ milestone, currentPoints, savedPoints = 0 }) => {
     if (!milestone || !milestone.target) return null;
 
     const { updateProfile, currentProfile } = useApp(); // Access updateProfile
@@ -11,8 +11,9 @@ const MilestoneCard = ({ milestone, currentPoints }) => {
     const [isExpired, setIsExpired] = React.useState(false);
     const [isUrgent, setIsUrgent] = React.useState(false);
 
-    const progress = Math.min(100, (currentPoints / milestone.target) * 100);
-    const isUnlocked = currentPoints >= milestone.target;
+    // Piggy Bank Logic: Progress is based on SAVED points, not wallet points
+    const progress = Math.min(100, (savedPoints / milestone.target) * 100);
+    const isUnlocked = savedPoints >= milestone.target;
 
     React.useEffect(() => {
         if (!milestone.deadline) return;
@@ -127,7 +128,7 @@ const MilestoneCard = ({ milestone, currentPoints }) => {
                 <div className={`flex justify-between items-center font-bold text-sm ${isUnlocked ? 'text-yellow-100' : 'text-gray-400'}`}>
                     <span>{Math.round(progress)}% Complete</span>
                     <span className={`px-3 py-1 rounded-full ${isUnlocked ? 'bg-white text-orange-500' : 'bg-blue-100 text-blue-500'}`}>
-                        {currentPoints} / {milestone.target} pts
+                        {savedPoints} / {milestone.target} saved
                     </span>
                 </div>
 
