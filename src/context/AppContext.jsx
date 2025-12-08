@@ -346,6 +346,26 @@ export const AppProvider = ({ children }) => {
         });
     };
 
+    const isTaskActiveNow = (task) => {
+        if (!task.timeOfDay || task.timeOfDay === 'any') return true;
+
+        const hour = new Date().getHours();
+        let currentPeriod = 'any';
+        if (hour >= 6 && hour < 12) currentPeriod = 'morning';
+        else if (hour >= 13 && hour < 18) currentPeriod = 'afternoon';
+        else if (hour >= 18 || hour < 6) currentPeriod = 'evening';
+
+        return task.timeOfDay === currentPeriod;
+    };
+
+    const getCurrentPeriod = () => {
+        const hour = new Date().getHours();
+        if (hour >= 6 && hour < 12) return 'morning';
+        if (hour >= 13 && hour < 18) return 'afternoon';
+        if (hour >= 18 || hour < 6) return 'evening';
+        return 'any';
+    };
+
     const value = {
         user,
         loading,
@@ -374,7 +394,7 @@ export const AppProvider = ({ children }) => {
         toggleTask,
         redeemReward,
         approveTask, rejectTask, addLog, dismissNotification,
-        isTaskCompletedToday, isTaskPending,
+        isTaskCompletedToday, isTaskPending, isTaskActiveNow, getCurrentPeriod,
         getTodayDate,
         switchProfile, dailySummary, setDailySummary
     };

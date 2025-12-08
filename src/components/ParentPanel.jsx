@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 const ParentPanel = ({ onClose, initialTab = 'tasks' }) => {
     const { tasks, setTasks, rewards, setRewards, profiles, addProfile, updateProfile, removeProfile, parentPin, pendingApprovals, logs, approveTask, rejectTask } = useApp();
     const [activeTab, setActiveTab] = useState(initialTab);
-    const [newItem, setNewItem] = useState({ text: '', value: '', assignedTo: [], milestoneDeadline: '' });
+    const [newItem, setNewItem] = useState({ text: '', value: '', assignedTo: [], milestoneDeadline: '', timeOfDay: 'any' });
     const [editingItem, setEditingItem] = useState(null);
 
     const handleAdd = async (e) => {
@@ -26,7 +26,7 @@ const ParentPanel = ({ onClose, initialTab = 'tasks' }) => {
                 }
                 await updateProfile(editingItem.id, updates);
             } else if (activeTab === 'tasks') {
-                setTasks(prev => prev.map(t => t.id === editingItem.id ? { ...t, text: newItem.text, points: parseInt(newItem.value), assignedTo: newItem.assignedTo } : t));
+                setTasks(prev => prev.map(t => t.id === editingItem.id ? { ...t, text: newItem.text, points: parseInt(newItem.value), assignedTo: newItem.assignedTo, timeOfDay: newItem.timeOfDay } : t));
             } else {
                 setRewards(prev => prev.map(r => r.id === editingItem.id ? { ...r, text: newItem.text, cost: parseInt(newItem.value) } : r));
             }
@@ -54,13 +54,14 @@ const ParentPanel = ({ onClose, initialTab = 'tasks' }) => {
                 if (activeTab === 'tasks') {
                     item.completed = false;
                     item.assignedTo = newItem.assignedTo || [];
+                    item.timeOfDay = newItem.timeOfDay || 'any';
                     setTasks(prev => [...prev, item]);
                 } else {
                     setRewards(prev => [...prev, item]);
                 }
             }
         }
-        setNewItem({ text: '', value: '', milestoneName: '', milestoneTarget: '', milestoneDeadline: '', assignedTo: [] });
+        setNewItem({ text: '', value: '', milestoneName: '', milestoneTarget: '', milestoneDeadline: '', assignedTo: [], timeOfDay: 'any' });
     };
 
     const handleEdit = (item) => {
@@ -77,14 +78,15 @@ const ParentPanel = ({ onClose, initialTab = 'tasks' }) => {
             setNewItem({
                 text: item.text,
                 value: item.points || item.cost,
-                assignedTo: item.assignedTo || []
+                assignedTo: item.assignedTo || [],
+                timeOfDay: item.timeOfDay || 'any'
             });
         }
     };
 
     const handleCancelEdit = () => {
         setEditingItem(null);
-        setNewItem({ text: '', value: '', milestoneName: '', milestoneTarget: '', milestoneDeadline: '', assignedTo: [] });
+        setNewItem({ text: '', value: '', milestoneName: '', milestoneTarget: '', milestoneDeadline: '', assignedTo: [], timeOfDay: 'any' });
     };
 
     const handleDelete = (id) => {
@@ -184,38 +186,60 @@ const ParentPanel = ({ onClose, initialTab = 'tasks' }) => {
                             </div>
                         )}
                         {activeTab === 'tasks' && (
-                            <div className="mb-3 animate-in fade-in slide-in-from-top-2">
-                                <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Assign To (Optional)</label>
-                                <div className="flex flex-wrap gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setNewItem({ ...newItem, assignedTo: [] })} // Clear = All
-                                        className={`px-3 py-1 rounded-full text-xs font-bold border ${newItem.assignedTo?.length === 0 ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-400 border-gray-200'}`}
-                                    >
-                                        All Kids
-                                    </button>
-                                    {profiles.map(p => {
-                                        const isSelected = newItem.assignedTo?.includes(p.id);
-                                        return (
+                            <div className="mb-3 animate-in fade-in slide-in-from-top-2 space-y-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Assign To (Optional)</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewItem({ ...newItem, assignedTo: [] })} // Clear = All
+                                            className={`px-3 py-1 rounded-full text-xs font-bold border ${newItem.assignedTo?.length === 0 ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-400 border-gray-200'}`}
+                                        >
+                                            All Kids
+                                        </button>
+                                        {profiles.map(p => {
+                                            const isSelected = newItem.assignedTo?.includes(p.id);
+                                            return (
+                                                <button
+                                                    key={p.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const current = newItem.assignedTo || [];
+                                                        let next;
+                                                        if (isSelected) {
+                                                            next = current.filter(id => id !== p.id);
+                                                        } else {
+                                                            next = [...current, p.id];
+                                                        }
+                                                        setNewItem({ ...newItem, assignedTo: next });
+                                                    }}
+                                                    className={`px-3 py-1 rounded-full text-xs font-bold border ${isSelected ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-500 border-gray-200'}`}
+                                                >
+                                                    {p.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Schedule</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {[
+                                            { id: 'any', label: 'Any Time', icon: '♾️' },
+                                            { id: 'morning', label: 'Morning (6am-12pm)', icon: '🌅' },
+                                            { id: 'afternoon', label: 'Afternoon (1pm-5:30pm)', icon: '☀️' },
+                                            { id: 'evening', label: 'Evening (6pm-12am)', icon: '🌙' }
+                                        ].map(time => (
                                             <button
-                                                key={p.id}
+                                                key={time.id}
                                                 type="button"
-                                                onClick={() => {
-                                                    const current = newItem.assignedTo || [];
-                                                    let next;
-                                                    if (isSelected) {
-                                                        next = current.filter(id => id !== p.id);
-                                                    } else {
-                                                        next = [...current, p.id];
-                                                    }
-                                                    setNewItem({ ...newItem, assignedTo: next });
-                                                }}
-                                                className={`px-3 py-1 rounded-full text-xs font-bold border ${isSelected ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-500 border-gray-200'}`}
+                                                onClick={() => setNewItem({ ...newItem, timeOfDay: time.id })}
+                                                className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all ${newItem.timeOfDay === time.id ? 'bg-purple-500 text-white border-purple-500 shadow-md' : 'bg-white text-gray-500 border-gray-200 hover:border-purple-300'}`}
                                             >
-                                                {p.name}
+                                                <span className="mr-1">{time.icon}</span> {time.label}
                                             </button>
-                                        );
-                                    })}
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}

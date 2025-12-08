@@ -4,8 +4,10 @@ import { CheckCircle2, Circle, Star, Sparkles, Clock, PartyPopper } from 'lucide
 import confetti from 'canvas-confetti';
 
 const TaskList = () => {
-    const { tasks, toggleTask, isTaskCompletedToday, isTaskPending } = useApp();
+    const { tasks, toggleTask, isTaskCompletedToday, isTaskPending, isTaskActiveNow, getCurrentPeriod } = useApp();
     const [showToast, setShowToast] = useState(false);
+
+    const currentTimeOfDay = getCurrentPeriod();
 
     const handleTaskClick = (taskId, isCompleted, isPending) => {
         if (isPending) return; // Ignore clicks on pending items
@@ -29,6 +31,9 @@ const TaskList = () => {
             <h2 className="text-2xl font-black text-gray-800 flex items-center gap-2">
                 <Star className="text-yellow-400 fill-yellow-400" />
                 My Chores
+                <span className="text-xs bg-gray-100 text-gray-400 px-2 py-1 rounded-full uppercase ml-auto">
+                    {currentTimeOfDay === 'any' ? 'All Day' : currentTimeOfDay} Mode
+                </span>
             </h2>
 
             {tasks.length === 0 ? (
@@ -39,9 +44,13 @@ const TaskList = () => {
             ) : (
                 <div className="grid gap-4">
                     {tasks.filter(task => {
-                        // Show if no assignment (all), empty assignment (all), or specifically assigned
-                        if (!task.assignedTo || task.assignedTo.length === 0) return true;
-                        return useApp().currentProfile && task.assignedTo.includes(useApp().currentProfile.id);
+                        // 1. Assignment Filter
+                        const isAssigned = !task.assignedTo || task.assignedTo.length === 0 || (useApp().currentProfile && task.assignedTo.includes(useApp().currentProfile.id));
+                        if (!isAssigned) return false;
+
+                        // 2. Time Filter
+                        return isTaskActiveNow(task);
+
                     }).map(task => {
                         const isCompleted = isTaskCompletedToday(task.id);
                         const isPending = isTaskPending(task.id); // New check

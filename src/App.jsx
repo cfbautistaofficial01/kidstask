@@ -50,9 +50,10 @@ function App() {
   const formattedDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
   // Calculate incomplete tasks for dynamic encouragement
-  // Calculate incomplete tasks for dynamic encouragement
-  const completedTasksToday = useApp().tasks.filter(t => useApp().isTaskCompletedToday(t.id)).length;
-  const incompleteTasks = useApp().tasks.filter(t => !useApp().isTaskCompletedToday(t.id)).length;
+  // Only count tasks that are visible right now!
+  const activeTasks = useApp().tasks.filter(t => useApp().isTaskActiveNow(t));
+  const completedTasksToday = activeTasks.filter(t => useApp().isTaskCompletedToday(t.id)).length;
+  const incompleteTasks = activeTasks.filter(t => !useApp().isTaskCompletedToday(t.id)).length;
 
   let OverlayIcon = Frown;
   let overlayColor = "text-blue-500";
