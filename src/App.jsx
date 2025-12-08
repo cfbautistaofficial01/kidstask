@@ -9,7 +9,7 @@ import ProfileSelector from './components/ProfileSelector';
 import Onboarding from './components/Onboarding';
 import MilestoneCard from './components/MilestoneCard';
 import { useApp } from './context/AppContext';
-import { Lock, LogOut, Calendar, Loader2, Frown, PartyPopper, Trophy, TrendingUp, Zap, Star, Sun, CheckCircle, Coins } from 'lucide-react';
+import { Lock, LogOut, Calendar, Loader2, Frown, PartyPopper, Trophy, TrendingUp, Zap, Star, Sun, CloudSun, Moon, CheckCircle, Coins } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 function App() {
@@ -204,14 +204,37 @@ function App() {
             <div className="bg-white rounded-[1.8rem] p-8 flex flex-col items-center text-center relative overflow-hidden">
 
               {/* Background decoration */}
-              <div className="absolute top-0 left-0 w-full h-32 bg-yellow-100 rounded-b-[50%] -z-10 opacity-50"></div>
+              {/* Background decoration - Dynamic Color */}
+              <div className={`absolute top-0 left-0 w-full h-32 rounded-b-[50%] -z-10 opacity-50 transition-colors duration-500
+                ${dailySummary.stats.period === 'morning' ? 'bg-yellow-100' :
+                  dailySummary.stats.period === 'afternoon' ? 'bg-orange-100' :
+                    dailySummary.stats.period === 'evening' ? 'bg-indigo-100' : 'bg-blue-100'
+                }
+              `}></div>
 
-              <div className="bg-yellow-400 p-5 rounded-full shadow-lg ring-4 ring-yellow-200 mb-6 animate-bounce">
-                <Sun size={48} className="text-white fill-white" />
+              {/* Dynamic Icon */}
+              <div className={`p-5 rounded-full shadow-lg ring-4 mb-6 animate-bounce transition-colors duration-500
+                ${dailySummary.stats.period === 'morning' ? 'bg-yellow-400 ring-yellow-200' :
+                  dailySummary.stats.period === 'afternoon' ? 'bg-orange-400 ring-orange-200' :
+                    dailySummary.stats.period === 'evening' ? 'bg-indigo-500 ring-indigo-300' : 'bg-blue-400 ring-blue-200'
+                }
+              `}>
+                {dailySummary.stats.period === 'morning' && <Sun size={48} className="text-white fill-white" />}
+                {dailySummary.stats.period === 'afternoon' && <CloudSun size={48} className="text-white fill-white" />}
+                {dailySummary.stats.period === 'evening' && <Moon size={48} className="text-white fill-white" />}
+                {dailySummary.stats.period === 'any' && <Zap size={48} className="text-white fill-white" />}
               </div>
 
-              <h2 className="text-3xl font-black text-gray-800 mb-2">Good Morning<br /><span className="text-blue-500">{dailySummary.stats.kidName}!</span> ☀️</h2>
-              <p className="text-gray-400 font-bold mb-8">Ready for a great day?</p>
+              <h2 className="text-3xl font-black text-gray-800 mb-2">
+                Good {dailySummary.stats.period === 'any' ? 'Day' : dailySummary.stats.period.charAt(0).toUpperCase() + dailySummary.stats.period.slice(1)}<br />
+                <span className="text-blue-500">{dailySummary.stats.kidName}!</span>
+                {dailySummary.stats.period === 'morning' ? ' ☀️' : dailySummary.stats.period === 'afternoon' ? ' 🌤️' : dailySummary.stats.period === 'evening' ? ' 🌙' : ' 🚀'}
+              </h2>
+              <p className="text-gray-400 font-bold mb-8">
+                {dailySummary.stats.period === 'morning' ? "Rise and shine! Ready for tasks?" :
+                  dailySummary.stats.period === 'afternoon' ? "Keep up the great work!" :
+                    dailySummary.stats.period === 'evening' ? "Almost done for the day?" : "Ready to be awesome?"}
+              </p>
 
               <div className="grid grid-cols-2 gap-4 w-full mb-8">
                 <div className="bg-blue-50 p-4 rounded-2xl border-2 border-blue-100 flex flex-col items-center">

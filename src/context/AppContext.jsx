@@ -201,12 +201,22 @@ export const AppProvider = ({ children }) => {
         if (!profile) return;
 
         const date = getTodayDate();
-        // Check if first login of the day
-        if (profile.lastLoginDate !== date) {
-            const tasksForKid = familyData.tasks.filter(t =>
-                !t.assignedTo || t.assignedTo.length === 0 || t.assignedTo.includes(profileId)
-            );
-            // Calculate potential points for today (approximated as all available tasks)
+        const currentPeriod = getCurrentPeriod(); // 'morning', 'afternoon', 'evening' or 'any'
+
+        // Check if first login of the *period* (not just day)
+        // We show summary if:
+        // 1. It's a new day
+        // 2. OR it's the same day but a NEW period (e.g., logged in morning, now it's afternoon)
+        if (profile.lastLoginDate !== date || profile.lastLoginPeriod !== currentPeriod) {
+
+            // Filter tasks for THIS period only (to show relevant stats)
+            const tasksForKid = familyData.tasks.filter(t => {
+                const assigned = !t.assignedTo || t.assignedTo.length === 0 || t.assignedTo.includes(profileId);
+                const timeMatch = isTaskActiveNow(t); // Re-use our time logic
+                return assigned && timeMatch;
+            });
+
+            // Calculate potential points for THIS period
             const totalPoints = tasksForKid.reduce((acc, t) => acc + t.points, 0);
 
             setDailySummary({
@@ -215,18 +225,19 @@ export const AppProvider = ({ children }) => {
                     tasksCount: tasksForKid.length,
                     totalPoints: totalPoints,
                     date: date,
-                    kidName: profile.name
+                    kidName: profile.name,
+                    period: currentPeriod // Pass period to UI
                 }
             });
 
-            // Update last login date
+            // Update last login date AND period
             const updatedProfiles = familyData.profiles.map(p => {
-                if (p.id === profileId) return { ...p, lastLoginDate: date };
+                if (p.id === profileId) return { ...p, lastLoginDate: date, lastLoginPeriod: currentPeriod };
                 return p;
             });
             await updateDoc(getFamilyRef(), { profiles: updatedProfiles });
         } else {
-            // Reset summary if already logged in today
+            // No summary needed
             setDailySummary({ show: false, stats: null });
         }
 
@@ -416,7 +427,7 @@ export const AppProvider = ({ children }) => {
         addProfile, updateProfile, removeProfile,
         currentProfile, setCurrentProfileId,
         toggleTask,
-        redeemReward, depositPoints, depositPoints,
+        redeemReward, depositPoints,
         approveTask, rejectTask, addLog, dismissNotification,
         isTaskCompletedToday, isTaskPending, isTaskActiveNow, getCurrentPeriod,
         getTodayDate,
