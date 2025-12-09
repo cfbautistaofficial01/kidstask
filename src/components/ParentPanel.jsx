@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Trash2, Plus, X, Settings, User, CheckCircle, XCircle, History, Clock } from 'lucide-react';
+import { Trash2, Plus, X, Settings, User, CheckCircle, XCircle, History, Clock, Lock } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 const ParentPanel = ({ onClose, initialTab = 'tasks' }) => {
-    const { tasks, setTasks, rewards, setRewards, profiles, addProfile, updateProfile, removeProfile, parentPin, pendingApprovals, logs, approveTask, rejectTask } = useApp();
+    const { tasks, setTasks, rewards, setRewards, profiles, addProfile, updateProfile, removeProfile, parentPin, updateParentPin, pendingApprovals, logs, approveTask, rejectTask } = useApp();
     const [activeTab, setActiveTab] = useState(initialTab);
     const [newItem, setNewItem] = useState({ text: '', value: '', assignedTo: [], milestoneDeadline: '', timeOfDay: 'any' });
     const [editingItem, setEditingItem] = useState(null);
@@ -115,7 +115,7 @@ const ParentPanel = ({ onClose, initialTab = 'tasks' }) => {
             <div className="p-4 max-w-5xl mx-auto pb-20">
 
                 <div className="flex gap-2 mb-6 bg-white p-1 rounded-xl shadow-sm border overflow-x-auto sticky top-[73px] z-10">
-                    {['tasks', 'rewards', 'profiles', 'approvals', 'history'].map(tab => (
+                    {['tasks', 'rewards', 'profiles', 'approvals', 'history', 'settings'].map(tab => (
                         <button
                             key={tab}
                             onClick={() => { setActiveTab(tab); handleCancelEdit(); }}
@@ -284,12 +284,50 @@ const ParentPanel = ({ onClose, initialTab = 'tasks' }) => {
 
                 <div className="space-y-3">
                     <h3 className="font-bold text-gray-400 text-sm uppercase px-1">
-                        {activeTab === 'history' ? 'Activity Log' : (activeTab === 'approvals' ? 'Pending Requests' : 'Current List')}
+                        {activeTab === 'history' ? 'Activity Log' : (activeTab === 'approvals' ? 'Pending Requests' : (activeTab === 'settings' ? 'Global Settings' : 'Current List'))}
                     </h3>
 
-                    <div className={`grid gap-3 ${activeTab === 'history' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
+                    <div className={`grid gap-3 ${activeTab === 'history' || activeTab === 'settings' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
 
-                        {activeTab === 'approvals' ? (
+                        {activeTab === 'settings' ? (
+                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm max-w-md mx-auto w-full">
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="bg-gray-100 p-3 rounded-full">
+                                        <Lock size={24} className="text-gray-600" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-lg text-gray-800">Security</h4>
+                                        <p className="text-sm text-gray-400">Manage parent access</p>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    const pin = e.target.pin.value;
+                                    if (pin.length !== 4) return alert('PIN must be 4 digits');
+                                    await updateParentPin(pin);
+                                    alert('Master PIN updated successfully!');
+                                    e.target.reset();
+                                }}>
+                                    <label className="block text-sm font-bold text-gray-500 mb-2">Change Master PIN</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            name="pin"
+                                            type="text"
+                                            placeholder="Enter new 4-digit PIN"
+                                            maxLength={4}
+                                            pattern="\d{4}"
+                                            className="flex-1 p-3 rounded-lg border bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-200 outline-none transition-all font-mono text-center tracking-widest text-lg"
+                                            required
+                                        />
+                                        <button className="px-6 py-3 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 transition-colors">
+                                            Save
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-2">Current PIN is <b>{parentPin}</b></p>
+                                </form>
+                            </div>
+                        ) : activeTab === 'approvals' ? (
                             pendingApprovals.map(p => {
                                 const kid = profiles.find(k => k.id === p.kidId);
                                 const task = tasks.find(t => t.id === p.taskId);

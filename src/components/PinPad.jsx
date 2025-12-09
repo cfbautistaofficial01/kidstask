@@ -1,9 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Delete } from 'lucide-react';
 
 const PinPad = ({ onSuccess, onClose, correctPin, title = "Parents Only", message = "Enter PIN to access settings" }) => {
     const [input, setInput] = useState('');
     const [error, setError] = useState(false);
+
+    // Keyboard support
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key >= '0' && e.key <= '9') {
+                handleNum(parseInt(e.key));
+            } else if (e.key === 'Backspace') {
+                setInput(prev => prev.slice(0, -1));
+            } else if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [input]); // Dependency on input might be needed if handleNum uses it, but handleNum uses current scope. Actually handleNum uses 'input' state, so we need it in dependency or use functional update in handleNum.
+
+    // Let's fix handleNum to be safe for effect usage or just rely on the effect closure refreshing.
+    // Better: Refactor handleNum to use functional state update if possible, but it does validation.
+    // Simpler: Add 'input' to dependency array so effect recreates when input changes.
+    // Optimisation: use helper that doesn't depend on stale closure if possible, but recreting listener is fine for this small component.
 
     const handleNum = (num) => {
         if (input.length < 4) {

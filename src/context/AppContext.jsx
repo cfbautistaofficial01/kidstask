@@ -167,6 +167,10 @@ export const AppProvider = ({ children }) => {
         await updateDoc(getFamilyRef(), { rewards: newRewards });
     };
 
+    const updateParentPin = async (newPin) => {
+        await updateDoc(getFamilyRef(), { pin: newPin });
+    };
+
     const addProfile = async (name, pin, milestone = null) => {
         const newProfile = { id: uuidv4(), name, pin, points: 0, savedPoints: 0, theme: 'purple' };
         if (milestone) newProfile.milestone = milestone;
@@ -431,7 +435,7 @@ export const AppProvider = ({ children }) => {
         approveTask, rejectTask, addLog, dismissNotification,
         isTaskCompletedToday, isTaskPending, isTaskActiveNow, getCurrentPeriod,
         getTodayDate,
-        switchProfile, dailySummary, setDailySummary
+        switchProfile, dailySummary, setDailySummary, updateParentPin
     };
 
     return (
