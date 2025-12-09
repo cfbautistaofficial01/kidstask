@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { CheckCircle2, Circle, Star, Sparkles, Clock, PartyPopper } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -6,8 +6,50 @@ import confetti from 'canvas-confetti';
 const TaskList = () => {
     const { tasks, toggleTask, isTaskCompletedToday, isTaskPending, isTaskActiveNow, getCurrentPeriod } = useApp();
     const [showToast, setShowToast] = useState(false);
+    const [timeLeft, setTimeLeft] = useState('');
 
     const currentTimeOfDay = getCurrentPeriod();
+
+    useEffect(() => {
+        const calculateTimeLeft = () => {
+            const now = new Date();
+            const hour = now.getHours();
+            let target = new Date(now);
+
+            // Determine Target Time based on Period
+            if (hour >= 6 && hour < 12) {
+                // Morning ends at 12:00
+                target.setHours(12, 0, 0, 0);
+            } else if (hour >= 13 && hour < 18) {
+                // Afternoon ends at 18:00
+                target.setHours(18, 0, 0, 0);
+            } else if (hour >= 18) {
+                // Evening ends at 6:00 AM next day
+                target.setDate(target.getDate() + 1);
+                target.setHours(6, 0, 0, 0);
+            } else if (hour < 6) {
+                // Early morning (still evening logic) ends at 6:00 AM today
+                target.setHours(6, 0, 0, 0);
+            } else {
+                // Lunch gap (12-1), technically no timer needed or "Afternoon starts in X"
+                setTimeLeft('');
+                return;
+            }
+
+            const diff = target - now;
+            if (diff > 0) {
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                setTimeLeft(`${hours}h ${minutes}m`);
+            } else {
+                setTimeLeft('');
+            }
+        };
+
+        calculateTimeLeft();
+        const timer = setInterval(calculateTimeLeft, 60000); // 1 min update
+        return () => clearInterval(timer);
+    }, [currentTimeOfDay]);
 
     const handleTaskClick = (taskId, isCompleted, isPending) => {
         if (isPending) return; // Ignore clicks on pending items
@@ -28,12 +70,20 @@ const TaskList = () => {
 
     return (
         <div className="space-y-4">
-            <h2 className="text-2xl font-black text-gray-800 flex items-center gap-2">
+            <h2 className="text-2xl font-black text-gray-800 flex flex-wrap items-center gap-2">
                 <Star className="text-yellow-400 fill-yellow-400" />
                 My Chores
-                <span className="text-xs bg-gray-100 text-gray-400 px-2 py-1 rounded-full uppercase ml-auto">
-                    {currentTimeOfDay === 'any' ? 'All Day' : currentTimeOfDay} Mode
-                </span>
+                <div className="ml-auto flex items-center gap-2">
+                    {timeLeft && currentTimeOfDay !== 'any' && (
+                        <span className="text-xs bg-red-100 text-red-500 px-3 py-1 rounded-full font-black animate-pulse flex items-center gap-1">
+                            <Clock size={12} />
+                            {timeLeft} left
+                        </span>
+                    )}
+                    <span className="text-xs bg-gray-100 text-gray-400 px-2 py-1 rounded-full uppercase">
+                        {currentTimeOfDay === 'any' ? 'All Day' : currentTimeOfDay} Mode
+                    </span>
+                </div>
             </h2>
 
             {tasks.length === 0 ? (
